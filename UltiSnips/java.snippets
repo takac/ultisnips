@@ -12,7 +12,65 @@ def nl(snip):
         snip += ""
     else:
         snip.rv += " "
+
 endglobal
+
+snippet cn "public constructor" !b
+public `!p snip.rv = snip.basename or "unknown"`($1) {
+	$0
+}
+endsnippet
+
+snippet cc "[c]onstuctor [c]all set"  
+this.${1:var} = $1;
+endsnippet
+
+snippet map "new set" !b
+Map<${1:String}, ${2:String}> ${2:map} = new ${3:Hash}Map<$1, $2>();
+$0
+endsnippet
+
+snippet set "new set" !b
+Set<${1:String}> ${2:set} = new ${3:Hash}Set<$1>();
+$0
+endsnippet
+
+snippet list "new list" !b
+List<${1:String}> ${2:list} = new ArrayList<$1>();
+$0
+endsnippet
+
+
+snippet col "generic collection" !b
+${1:List}<${2:String}> ${3:collection} = new ${4:Hash}$1<$2>();
+$0
+endsnippet
+
+
+snippet n "new primitive"
+${1:int} ${2:i} = ${3:1};
+endsnippet
+snippet o "new Object" 
+${1:Object} ${2:o} = new $1(${3});
+endsnippet
+
+snippet logi "Imports for logging" !b
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+endsnippet
+
+snippet log "Logger" !b
+${1:private} static final Logger logger = LoggerFactory.getLogger(${2:`!p
+snip.rv = snip.basename or ""`}.class);
+endsnippet
+
+snippet sleep "Sleep" !b
+try {
+	Thread.sleep(${1:1000});
+} catch (InterruptedException e){
+	e.printStackTrace();
+}
+endsnippet
 
 snippet ab "abstract" b
 abstract 
@@ -20,6 +78,18 @@ endsnippet
 
 snippet as "assert" b
 assert ${1:test}${2/(.+)/(?1: \: ")/}${2:Failure message}${2/(.+)/(?1:")/};$0
+endsnippet
+
+snippet at "assert true" !b
+assertTrue(${1:actual});
+endsnippet
+
+snippet af "assert equals" !b
+assertFalse(${1:actual});$0
+endsnippet
+
+snippet ae "assert equals" !b
+assertEquals(${1:expected}, ${2:actual});
 endsnippet
 
 snippet br "break"
@@ -47,11 +117,11 @@ snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent} }${4:implements 
 endsnippet
 
 snippet cos "constant string" b
-static public final String ${1:var} = "$2";$0
+public static final String ${1:var} = "$2";$0
 endsnippet
 
 snippet co "constant" b
-static public final ${1:String} ${2:var} = $3;$0
+public static final ${1:String} ${2:var} = $3;$0
 endsnippet
 
 snippet de "default" b
@@ -71,16 +141,21 @@ else`!p nl(snip)`{
 }
 endsnippet
 
-snippet fi "final" b
+snippet f "final"
 final 
 endsnippet
 
 snippet fore "for (each)" b
-for ($1 : $2)`!p nl(snip)`{
+for ($1 $2 : $3)`!p nl(snip)`{
 	$0
 }
 endsnippet
 
+snippet fori "for" b
+for (int ${1:i} = 0; $1 < $2; $1++)`!p nl(snip)`{
+	$0
+}
+endsnippet
 snippet for "for" b
 for ($1; $2; $3)`!p nl(snip)`{
 	$0
@@ -128,6 +203,18 @@ snippet j.u "java_util_"  i
 java.util.
 endsnippet
 
+snippet /^\s*[Ss](tr?)?/ "String" r
+String 
+endsnippet
+
+snippet try "try/catch" !b
+try {
+	$1
+} catch(${2:Exception} ${3:e}){
+	${4:e.printStackTrace();}
+}
+endsnippet
+
 snippet main "method (main)" b
 public static void main(String[] args)`!p nl(snip)`{
 	$0
@@ -135,7 +222,7 @@ public static void main(String[] args)`!p nl(snip)`{
 endsnippet
 
 snippet m "method" b
-${1:void} ${2:method}($3) ${4:throws $5 }{
+${1:private} ${2:void} ${3:method}($4) ${5:throws $6 }{
 	$0
 }
 
@@ -145,11 +232,19 @@ snippet pa "package" b
 package 
 endsnippet
 
-snippet p "print" b
+snippet pne "print" b
+System.err.print($1);$0
+endsnippet
+
+snippet pe "println"  b
+System.err.println($1);$0
+endsnippet
+
+snippet pn "print no nl" b
 System.out.print($1);$0
 endsnippet
 
-snippet pl "println"  b
+snippet p "println"  b
 System.out.println($1);$0
 endsnippet
 
@@ -169,13 +264,13 @@ snippet re "return" b
 return 
 endsnippet
 
-snippet st "static"
+snippet "sta?" "static" r
 static 
 endsnippet
 
 snippet sw "switch" b
 switch ($1)`!p nl(snip)`{
-	$0
+	case $2: $0
 }
 endsnippet
 
@@ -190,9 +285,21 @@ public class ${1:`!p snip.rv = snip.basename or "untitled"`} extends ${2:TestCas
 endsnippet
 
 snippet t "test" b
-public void test${1:Name}() throws Exception`!p nl(snip)`{
+@Test
+public void ${1:name}Test() {
 	$0
 }
+endsnippet
+
+snippet tt "test" b
+@Test
+public void ${1:name}Test() ${2:throws ${3:Exception}}`!p nl(snip)`{
+	$0
+}
+endsnippet
+
+snippet exp "Easy mock help" !b
+EasyMock.expect(${1:mock}.${2:method}()).andReturn(${3:value});
 endsnippet
 
 snippet th "throw" b
