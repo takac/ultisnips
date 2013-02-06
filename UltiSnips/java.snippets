@@ -39,9 +39,12 @@ try {
 }
 endsnippet
 
+snippet /on|no/ "object named" !br
+${1:Object} ${2:`!p snip.rv=t[1].lower()`} = new $1(${3});
+endsnippet
+
 snippet /i|n/ "new primitive or int" !br
-${1:int} ${2:i} = ${3:1};
-$0
+${1:int} ${2:i} = ${3:1};$0
 endsnippet
 
 snippet /o|v/ "new Object or variable" !br
@@ -175,7 +178,7 @@ default:
 	$0
 endsnippet
 
-snippet elif "else if" b
+snippet elif "else if"
 else if ($1)`!p nl(snip)`{
 	$0
 }
@@ -192,7 +195,7 @@ final
 endsnippet
 
 snippet fore "for (each)" b
-for ($1 : $2)`!p nl(snip)`{
+for (${1:String} ${2:`!p if len(t[1]) > 0: snip.rv= t[1][0].lower()`} : ${3:`!p if len(t[1]) > 0: snip.rv=t[1][0].lower() + t[1][1:] + "s"`})`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -356,7 +359,7 @@ public void set${1:Name}(${2:String} `!p snip.rv = t[1].lower()`) {
 }
 
 public $2 get$1() {
-	return `!p snip.rv = t[1].lower()`;
+	return `!p snip.rv = rCamel(t[1])`;
 }
 endsnippet
 
@@ -364,12 +367,12 @@ snippet pa "package" b
 package 
 endsnippet
 
-snippet p "print" b
-System.out.print($1);$0
+snippet p "println" b
+System.out.println($1);$0
 endsnippet
 
-snippet pl "println"  b
-System.out.println($1);$0
+snippet pl "print"  b
+System.out.print($1);$0
 endsnippet
 
 snippet pr "private" b
@@ -404,6 +407,13 @@ endsnippet
 
 snippet tc "test case"
 public class ${1:`!p snip.rv = snip.basename or "untitled"`} extends ${2:TestCase}`!p nl(snip)`{
+	$0
+}
+endsnippet
+
+snippet bef "before test" !b
+@Before
+public void setup() {
 	$0
 }
 endsnippet
