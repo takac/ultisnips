@@ -37,6 +37,46 @@ def rCamel(word):
 		return word[0].lower() + word[1:]
 	else:
 		return ""
+def complete(word, opts, f=False):
+	if len(word) == 0:
+		if f: return opts[0] 
+		else: return ""
+	if word:
+		opts = [ m[len(word):] for m in opts if m.startswith(word) ]
+	if len(opts) == 1:
+		return opts[0]
+	if len(opts) == 0:
+		return ""
+	return "{" + '|'.join(opts) + "}"
+
+def completeFirst(word, opts):
+	if(len(word.split(" ")) > 1):
+		return complete(word.split(" ")[-1], opts)
+	return complete(word, opts)
+
+types = ['String', 'Date', 'Calendar', 'long', 'Long', 'int', 'Integer', 'Double', 'double']
+def completeType(word):
+	return complete(word, types)
+
+def completeArgs(word):
+	if len(word.split(",")) > 1:
+		word = word.split(",")[-1]
+	if len(word) == 0: return ""
+	if word[0] == " ":
+		word = word[1:]
+	args = []
+	for i in types:
+		if i[0].isupper():
+			args.append(" ".join([i, rCamel(i)]))
+		else: args.append(" ".join([i, i[0]]))
+	completed = complete(word, args)
+	if len(completed) == 0:
+		if len(word.split(" ")) < 2:
+			if word[0].isupper():
+				return complete(word, [word + " " + rCamel(word)])
+			else: return complete(word, [word + " " + word[0]]) 
+		else: return complete(word.split(" ")[1], [rCamel(word.split(" ")[0])], True)
+	else: return completed
 
 endglobal
 
@@ -48,8 +88,14 @@ try {
 }
 endsnippet
 
+snippet mod "modifers" !b
+${1:public}`!p snip.rv = completeFirst(t[1], ['public', 'private', 'static', 'final'])` ${2:String}`!p snip.rv=completeType(t[2])` ${3:method}($4`!p snip.rv = completeArgs(t[4])`) {
+	$0
+}
+endsnippet
+
 snippet /on|no/ "object named" !br
-${1:Object} ${2:`!p rCamel(t[1])`} = new $1(${3});
+${1:Object} ${2:`!p snip.rv = rCamel(t[1])`} = new $1(${3});
 endsnippet
 
 snippet /i|n/ "new primitive or int" !br
@@ -106,6 +152,10 @@ public class ${1:`!p
 snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent} }${4:implements ${5:Interface} }{
 	$0
 }
+endsnippet
+
+snippet geti "get instanced" !b
+${1:Object} ${2:`!p snip.rv = rCamel(t[1])`} = $1().getInstance();
 endsnippet
 
 snippet clc "class with constructor, fields, setter and getters" !b
