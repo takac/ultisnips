@@ -87,6 +87,7 @@ def completeArgs(word):
 	if word[0] == " ":
 		word = word[1:]
 	args = []
+	if len(word) == 0: return ""
 	for i in types:
 		if i[0].isupper():
 			args.append(" ".join([i, rCamel(i)]))
@@ -183,6 +184,10 @@ snippet ca "catch" b
 catch (${1:Exception} ${2:e})`!p nl(snip)`{
 	$0
 }
+endsnippet
+
+snippet logger "new logger" !b
+private static final Logger `!p snip.rv = log()` = LoggerFactory.getLogger(`!p snip.rv = snip.basename`.class);
 endsnippet
 
 snippet cle "class extends" b
@@ -287,6 +292,11 @@ snippet fi "final"
 final 
 endsnippet
 
+snippet foren "for each entry" !b
+for (Entry<${1:String}, ${2:String}> ${3:e} : ${4:map}.entrySet()) {
+
+}
+endsnippet
 snippet fore "for (each)" b
 for (${1:String} ${2:`!p if len(t[1]) > 0: snip.rv= t[1][0].lower()`} : ${3:`!p snip.rv = rCamel(t[1]) + "s"`})`!p nl(snip)`{
 	$0
