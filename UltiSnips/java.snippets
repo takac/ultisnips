@@ -10,8 +10,10 @@
 # @Test annotation from the method 
 
 global !p
-types = ['String', 'Date', 'Calendar', 'void', 'long', 'Long', 'int', 'Integer', 'Double', 'double']
-modifiers = ['public', 'private', 'static', 'final', 'synchronized', 'transient', 'protected', 'abstract']
+logField = "logger"
+logLevels = ["trace", "debug", "info", "warn", "error"]
+types = ['int', 'boolean', 'Date', 'Calendar', 'void', 'long', 'Long', 'String', 'Integer', 'Double', 'double']
+modifiers = ['private', 'public', 'static', 'final', 'synchronized', 'transient', 'protected', 'abstract']
 def junit(snip):
     if snip.opt("g:ultisnips_java_junit", "") == "3":
         snip += ""
@@ -23,10 +25,23 @@ def nl(snip):
         snip += ""
     else:
         snip.rv += " "
+
+def getNewLine(snip, indent=""):
+    if snip.opt("g:ultisnips_java_brace_style", "") == "nl":
+        return "\n"+snip.mkline(indent, "\t")
+    else:
+        return " "
+
 def getArgs(group):
 	import re
 	word = re.compile('[a-zA-Z><.]+ \w+')
 	return [i.split(" ") for i in word.findall(group) ]
+
+def log():
+	return logField
+
+def completeLogLevel(word):
+	return complete(word, logLevels, True)
 
 def camel(word):
 	if len(word) > 0:
@@ -39,9 +54,9 @@ def rCamel(word):
 		return word[0].lower() + word[1:]
 	else:
 		return ""
-def complete(word, opts, complete_blank=False, show=True):
+def complete(word, opts, complete_empty=False, show=True):
 	if len(word) == 0:
-		if complete_blank: return opts[0] 
+		if complete_empty: return opts[0] 
 		else: return ""
 	if word:
 		opts = [ m[len(word):] for m in opts if m.startswith(word) ]
@@ -53,18 +68,14 @@ def complete(word, opts, complete_blank=False, show=True):
 		return "{" + '|'.join(opts) + "}"
 	else: return opts[0]
 
-def completeFirst(word, opts, complete_blank=False, show=True):
-	if(len(word.split(" ")) > 1):
-		return complete(word.split(" ")[-1], opts,complete_blank, show)
-	return complete(word, opts, complete_blank, show)
+def completeFirst(word, opts, complete_empty=False, show=True):
+	return complete(word.split(" ")[-1], opts,complete_empty, show)
 
-def completeType(word, complete_blank=False, show=True):
-	return complete(word, types,complete_blank,show)
+def completeType(word, complete_empty=False, show=True):
+	return complete(word, types,complete_empty,show)
 
-def completeMod(word, complete_blank=False, f2=False, show=False):
-	if complete_blank:
-		return completeFirst(word, modifiers, f2, show)
-	return complete(word, modifiers, f2, show)
+def completeMod(word, complete_empty=False, show=False):
+	return completeFirst(word, modifiers, complete_empty, show)
 
 
 def completeArgs(word):
@@ -73,6 +84,7 @@ def completeArgs(word):
 	if len(word) == 0: return ""
 	if word[0] == " ":
 		word = word[1:]
+	if len(word) == 0: return ""
 	args = []
 	for i in types:
 		if i[0].isupper():
@@ -90,56 +102,33 @@ def completeArgs(word):
 def isNative(word):
 	return (len(word) > 0) and (word[0].islower() or word == "String")
 
-def get(t, n, s1="", s2=""):
-	if( n == 1 ):
-		r = completeMod(t[1],True,True)+" "
-		return r
-	if( n == 2 ):
-		r = completeType(t[2],True)+" "
-		return r
-	if ( n == 3):
-		r = "methodName("
-		return r
-	if ( n == 4):
-		r = ""
-		return r
-	if ( n == 5):
-		r = ") {\n\t\n\t}"
-		return r
-	return ""
-
 endglobal
 
-snippet j "expriment" !b
-$1`!p snip.rv=get(t,1)`$2`!p snip.rv=get(t,2)`$3`!p snip.rv=get(t,3)`$4`!p snip.rv=get(t,4)`$5`!p snip.rv=get(t,5)`
-endsnippet
-
 snippet sleep "try sleep catch" !b
-try {
+try`!p nl(snip)`{
 	Thread.sleep(${1:1000});
-} catch (InterruptedException e){
+} catch (InterruptedException e)`!p nl(snip)`{
 	e.printStackTrace();
 }
 endsnippet
 
 snippet m "method" !b
-${1:private}`!p snip.rv = completeMod(t[1],True)
-s = t[1]+completeMod(t[1], True)` ${2:void}`!p
-snip.rv=completeType(t[2])` ${3:method}($4`!p
+$1`!p snip.rv = completeMod(t[1],True,False)
+s = t[1]+completeMod(t[1], True,False)` $2`!p
+snip.rv=completeType(t[2], True,True)` ${3:method}($4`!p
 snip.rv = completeArgs(t[4])`)`!p
 if s.find('abstract') > -1:
 	snip.rv = ";"
 else:
-	snip.rv = " {\n\t\t"`$0`!p
+	snip.rv=getNewLine(snip)+"{\n" + snip.mkline("\t\t")`$0`!p
 if s.find('abstract') > -1:
 	snip.rv = ""
 else:
-	snip.rv = "\n\t}"`
-
+	snip += snip.mkline("}")`
 endsnippet
 
 snippet /o|v/ "new Object or variable" !br
-${1:Object}`!p s=t[1]+completeType(t[1])
+$1`!p s=t[1]+completeType(t[1])
 snip.rv=completeType(t[1])` ${2:`!p
 if isNative(s): snip.rv = s[0].lower()
 elif len(s) > 0: snip.rv = rCamel(s)
@@ -151,16 +140,16 @@ else: snip.rv = ")"`;$0
 endsnippet
 
 snippet f "field" !b
-${1:private}`!p snip.rv = completeMod(t[1],True)` ${2:String}`!p s=t[2]+completeType(t[2])
-snip.rv=completeType(t[2])` ${3:`!p
+$1`!p snip.rv = completeMod(t[1],True)` $2`!p s=t[2]+completeType(t[2], True,False)
+snip.rv=completeType(t[2],True,False)` ${3:`!p
 if isNative(s): snip.rv = s[0].lower()
 elif len(s) > 0: snip.rv = rCamel(s)
 else: snip.rv = ""`}`!p
-if t[3].endswith("=") > 0:
-	snip.rv = " new "+s+"("
+if t[3].find("=") > -1:
+	snip.rv = complete(t[3],[t[3][t[3].find("="):]+" new "+s+"("])
 else:
 	snip.rv = ";"`$0`!p
-if t[3].endswith("=") > 0:
+if t[3].find("=") > -1:
 	snip.rv = ");"
 else:
 	snip.rv = ""`
@@ -205,7 +194,7 @@ endsnippet
 
 snippet cle "class extends" b
 public class ${1:`!p
-snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent} }${4:implements ${5:Interface} }{
+snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent}} ${4:implements ${5:Interface}}`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -220,7 +209,7 @@ endsnippet
 
 snippet clc "class with constructor, fields, setter and getters" !b
 public class `!p
-snip.rv = snip.basename or "untitled"` {
+snip.rv = snip.basename or "untitled"``!p nl(snip)`{
 `!p
 args = getArgs(t[1])
 if len(args) == 0: snip.rv = ""
@@ -228,7 +217,7 @@ for i in args:
 	snip.rv += "\n\tprivate " + i[0] + " " + i[1]+ ";"
 if len(args) > 0:
 	snip.rv += "\n"`
-	public `!p snip.rv = snip.basename or "unknown"`($1) { `!p
+	public `!p snip.rv = snip.basename or "unknown"`($1)`!p snip.rv = getNewLine(snip)`{ `!p
 args = getArgs(t[1])
 for i in args:
 	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1] + ";"
@@ -239,10 +228,10 @@ if len(args) == 0:
 args = getArgs(t[1])
 if len(args) == 0: snip.rv = ""
 for i in args:
-	snip.rv += "\n\tpublic void set" + camel(i[1]) + "(" + i[0] + " " + i[1] + ") {\n" + "\
+	snip.rv += "\n\tpublic void set" + camel(i[1]) + "(" + i[0] + " " + i[1] + ")" + getNewLine(snip) + "{\n" + "\
 	\tthis." + i[1] + " = " + i[1] + ";\n\t}\n"
 
-	snip.rv += "\n\tpublic " + i[0] + " get" + camel(i[1]) + "() {\
+	snip.rv += "\n\tpublic " + i[0] + " get" + camel(i[1]) + "()" + getNewLine(snip) + "{\
 	\n\t\treturn " + i[1] + ";\n\t}\n"
 `
 }
@@ -250,14 +239,14 @@ endsnippet
 
 snippet clc "class with constucutor, with field names" b
 public class `!p
-snip.rv = snip.basename or "untitled"` {
+snip.rv = snip.basename or "untitled"``!p nl(snip)`{
 `!p
 args = getArgs(t[1])
 for i in args:
 	snip.rv += "\n\tprivate " + i[0] + " " + i[1]+ ";"
 if len(args) > 0:
 	snip.rv += "\n"`
-	public `!p snip.rv = snip.basename or "unknown"`($1) { `!p
+	public `!p snip.rv = snip.basename or "unknown"`($1)`!p nl(snip)`{ `!p
 args = getArgs(t[1])
 for i in args:
 	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1]
@@ -269,9 +258,9 @@ endsnippet
 
 snippet clc "class and constrcutor" b
 public class `!p
-snip.rv = snip.basename or "untitled"` {
+snip.rv = snip.basename or "untitled"``!p nl(snip)`{
 
-	public `!p snip.rv = snip.basename or "untitled"`($2) {
+	public `!p snip.rv = snip.basename or "untitled"`($2)`!p nl(snip)`{
 		$0
 	}
 }
@@ -279,9 +268,13 @@ endsnippet
 
 snippet cl "class" b
 public class ${1:`!p
-snip.rv = snip.basename or "untitled"`} {
+snip.rv = snip.basename or "untitled"`}`!p nl(snip)`{
 	$0
 }
+endsnippet
+
+snippet log "logger method" !b
+`!p snip.rv=log()`.$1`!p snip.rv=completeLogLevel(t[1])`($2);  
 endsnippet
 
 snippet cos "constant string" b
@@ -295,18 +288,6 @@ endsnippet
 snippet de "default" b
 default:
 	$0
-endsnippet
-
-snippet elif "else if"
-else if ($1)`!p nl(snip)`{
-	$0
-}
-endsnippet
-
-snippet /el(se)?/ "else" br
-else`!p nl(snip)`{
-	$0
-}
 endsnippet
 
 snippet fi "final"
@@ -333,8 +314,20 @@ endsnippet
 
 snippet if "if" b
 if ($1)`!p nl(snip)`{
-	$0
-}
+	$2
+}$0
+endsnippet
+
+snippet /el(se)?if/ "else if" wr
+else if ($1)`!p nl(snip)`{
+	$2
+}$0
+endsnippet
+
+snippet /el(se)?/ "else" wr
+else`!p nl(snip)`{
+	$1
+}$0
 endsnippet
 
 snippet imt "import junit_framework_TestCase;"  b
@@ -347,7 +340,7 @@ import ${1:java}.${2:util}.$0
 endsnippet
 
 snippet in "interface" b
-interface ${1:`!p snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent} }{
+interface ${1:`!p snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent}}`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -373,7 +366,7 @@ String
 endsnippet
 
 snippet cn "Constructor" b
-public `!p snip.rv = snip.basename or "untitled"`(${1:}) {
+public `!p snip.rv = snip.basename or "untitled"`(${1:})`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -385,7 +378,7 @@ for i in args:
 	snip.rv += "\n\tprivate " + i[0] + " " + i[1]+ ";"
 if len(args) > 0:
 	snip.rv += "\n"`
-public `!p snip.rv = snip.basename or "unknown"`($1) { `!p
+public `!p snip.rv = snip.basename or "unknown"`($1)`!p nl(snip)`{ `!p
 args = getArgs(t[1])
 for i in args:
 	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1]
@@ -421,15 +414,15 @@ public static void main(String[] args)`!p nl(snip)`{
 endsnippet
 
 snippet try "try/catch" !b
-try {
+try`!p nl(snip)`{
 	$1
-} catch(${2:Exception} ${3:e}){
+} catch(${2:Exception} ${3:e})`!p nl(snip)`{
 	${4:$3.printStackTrace();}
 }
 endsnippet
 
 snippet mt "method throws" b!
-${1:private} ${2:void} ${3:method}(${4}) ${5:throws $6 }{
+${1:private} ${2:void} ${3:method}(${4}) ${5:throws $6}`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -449,29 +442,29 @@ if not "void" in t[2]:
 else:
 	snip.rv = ""`
  **/
-${1:public} ${2:void} ${3:method}($4) ${5:throws $6 }{
+${1:public} ${2:void} ${3:method}($4) ${5:throws $6}`!p nl(snip)`{
 	$0
 }
 endsnippet
 
 snippet /get(ter)?/ "getter" !br
-public ${1:String} get${2:Name}() {
+public ${1:String} get${2:Name}()`!p nl(snip)`{
 	return `!p snip.rv = rCamel(t[2])`;
 }
 endsnippet
 
 snippet /set(ter)?/ "setter" !br
-public void set${1:Name}(${2:String} $1) {
+public void set${1:Name}(${2:String} $1)`!p nl(snip)`{
 	return this.`!p snip.rv = rCamel(t[1])` = `!p snip.rv = rCamel(t[1])`;
 }
 endsnippet
 
 snippet /se?tge?t|ge?tse?t|gs/ "setter and getter" !br
-public void set${1:Name}(${2:String} `!p snip.rv = rCamel(t[1])`) {
+public void set${1:Name}(${2:String} `!p snip.rv = rCamel(t[1])`)`!p nl(snip)`{
 	this.`!p snip.rv = rCamel(t[1])` = `!p snip.rv = rCamel(t[1])`;
 }
 
-public $2 get$1() {
+public $2 get$1()`!p nl(snip)`{
 	return `!p snip.rv = rCamel(t[1])`;
 }
 endsnippet
@@ -526,25 +519,25 @@ endsnippet
 
 snippet bef "before test" !b
 @Before
-public void setup() {
+public void setup()`!p nl(snip)`{
 	$0
 }
 endsnippet
 
 snippet t "test" b
-`!p junit(snip)`public void test${1:Name}() {
+`!p junit(snip)`public void test${1:Name}()`!p nl(snip)`{
 	$0
 }
 endsnippet
 
 snippet tt "test throws" b
-`!p junit(snip)`public void test${1:Name}() ${2:throws Exception }{
+`!p junit(snip)`public void test${1:Name}() ${2:throws Exception}`!p nl(snip)`{
 	$0
 }
 endsnippet
 
 snippet th "throw" b
-throw new $0
+throw new $0;
 endsnippet
 
 snippet wh "while" b
