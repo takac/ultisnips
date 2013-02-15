@@ -1,109 +1,160 @@
-###########################################################################
-#                            TEXTMATE SNIPPETS                            #
-###########################################################################
+## TODO
+## 1. Scan current file for keywords
+## 2. Fix indenting for clc and cn with snip +=
+## 3. Remove \t which won't expand to spaces
 
 # Many of the snippets here use a global option called
 # "g:ultisnips_java_brace_style" which, if set to "nl" will put a newline
 # before '{' braces.
+
 # Setting "g:ultisnips_java_junit" will change how the test method snippet
 # looks, it is defaulted to junit4, setting this option to 3 will remove the
 # @Test annotation from the method 
 
 global !p
-logField = "logger"
-logLevels = ["trace", "debug", "info", "warn", "error"]
-types = ['int', 'boolean', 'Date', 'Calendar', 'void', 'long', 'Long', 'String', 'Integer', 'Double', 'double']
+import os
+# List of all classes to autocomplete
+classes_file = '.vim/bundle/ultisnips/java/all_classes.lst'
+# List of just throwable/exception classes
+exceptions_file = '.vim/bundle/ultisnips/java/exceptions.lst'
+
+# The name you want for you logger field (could move this to g:ultisnips_java_logger_field)
+logField = 'logger'
+# Log levels you are using
+logLevels = ['trace', 'debug', 'info', 'warn', 'error']
+
+# types = ['int', 'boolean', 'Date', 'Calendar', 'void', 'long', 'Long', 'String', 'Integer', 'Double', 'double', 'InetAddress', ]
+types = [i.strip() for i in open(classes_file) if len(i.strip()) > 2]
+
+# Types that use `x = x.valueOf(yy);` instead of `x = new X();`
+valueOfTypes = ['Double', 'Integer', 'Short', 'Long', 'Byte']
+
+# All our type modifiers..
 modifiers = ['private', 'public', 'static', 'final', 'synchronized', 'transient', 'protected', 'abstract']
+
+# Small list annotations for completion
+annotations = ['Override', 'Inject', 'Resource', 'Test', 'Before', 'After', 'BeforeClass', 'AfterClass', 'SupressWarning', 'Deprecated', 'Target', 'Rention']
+
 def junit(snip):
-    if snip.opt("g:ultisnips_java_junit", "") == "3":
+    if snip.opt('g:ultisnips_java_junit', '') == '3':
         snip += ""
     else:
-        snip.rv += "@Test\n\t"
+        snip.rv += '@Test\n\t'
 
 def nl(snip):
-    if snip.opt("g:ultisnips_java_brace_style", "") == "nl":
+    if snip.opt('g:ultisnips_java_brace_style', '') == 'nl':
         snip += ""
     else:
         snip.rv += " "
 
 def getNewLine(snip, indent=""):
-    if snip.opt("g:ultisnips_java_brace_style", "") == "nl":
+    if snip.opt('g:ultisnips_java_brace_style', '') == 'nl':
         return "\n"+snip.mkline(indent, "\t")
     else:
-        return " "
+        return ' '
 
+# Captures argument pairs from method sig -> x( ... )
 def getArgs(group):
 	import re
 	word = re.compile('[a-zA-Z><.]+ \w+')
-	return [i.split(" ") for i in word.findall(group) ]
+	return [i.split(' ') for i in word.findall(group) ]
 
+# Quick method to return method field name
 def log():
 	return logField
-
-def completeLogLevel(word):
-	return complete(word, logLevels, True)
 
 def camel(word):
 	if len(word) > 0:
 		return word[0].upper() + word[1:]
 	else:
-		return ""
+		return ''
 
 def rCamel(word):
 	if len(word) > 0:
 		return word[0].lower() + word[1:]
-	else:
-		return ""
+	return ''
 def complete(word, opts, complete_empty=False, show=True):
 	if len(word) == 0:
 		if complete_empty: return opts[0] 
-		else: return ""
+		else: return ''
 	if word:
 		opts = [ m[len(word):] for m in opts if m.startswith(word) ]
 	if len(opts) == 1:
 		return opts[0]
 	if len(opts) == 0:
-		return ""
+		return ''
 	if show:
-		return "{" + '|'.join(opts) + "}"
+		return '{' + '|'.join(opts) + '}'
 	else: return opts[0]
 
 def completeFirst(word, opts, complete_empty=False, show=True):
-	return complete(word.split(" ")[-1], opts,complete_empty, show)
+	return complete(word.split(' ')[-1], opts,complete_empty, show)
 
-def completeType(word, complete_empty=False, show=True):
+# Convinient completer methods for different scenarios
+def completeType(word, complete_empty=False, show=False):
 	return complete(word, types,complete_empty,show)
 
 def completeMod(word, complete_empty=False, show=False):
 	return completeFirst(word, modifiers, complete_empty, show)
 
+def completeLogLevel(word):
+	return complete(word, logLevels, True)
 
+def completeAnnotation(word):
+    return complete(word, annotations, True)
+
+def completeException(word):
+	exceptions = [i.strip() for i in open(exceptions_file) if i.startswith(word) ]
+	return complete(word, exceptions, True, False)
+
+def getArgName(typename):
+	if len(typename) == 0: return ""
+	if isNative(typename):
+		return typename[0].lower()
+	return rCamel(typename)
+
+# Completer for argument pairs
 def completeArgs(word):
-	if len(word.split(",")) > 1:
-		word = word.split(",")[-1]
-	if len(word) == 0: return ""
-	if word[0] == " ":
-		word = word[1:]
-	if len(word) == 0: return ""
-	args = []
-	if len(word) == 0: return ""
-	for i in types:
-		if i[0].isupper():
-			args.append(" ".join([i, rCamel(i)]))
-		else: args.append(" ".join([i, i[0]]))
-	completed = complete(word, args)
-	if len(completed) == 0:
-		if len(word.split(" ")) < 2:
-			if word[0].isupper():
-				return complete(word, [word + " " + rCamel(word)])
-			else: return complete(word, [word + " " + word[0]]) 
-		else: return complete(word.split(" ")[1], [rCamel(word.split(" ")[0])], True)
-	else: return completed
+	# Get last pair
+	word = word.split(',')[-1]
+	if len(word) == 0: return ''
+	# Remove leading space
+	if word[0] == ' ': word = word[1:]
+	if len(word) == 0: return ''
+
+	# Complete argument name
+	if len(word.split(' ')) > 1:
+		return complete(word.split(' ')[1], [getArgName(word.split(' ')[0])], True, False)
+
+	# Complete type argument from known types
+	args = [ ' '.join([i, getArgName(i)]) for i in types if i.startswith(word.split(' ')[0]) ]
+
+	# Complete for unknown
+	args.append(word + ' ' + getArgName(word))
+	return complete(word, args, True, show=False)
 
 def isNative(word):
-	return (len(word) > 0) and (word[0].islower() or word == "String")
+	return (len(word) > 0) and (word[0].islower() or word == 'String')
+
+def isValueOfType(word):
+	return word in valueOfTypes
+
+def createSetter(classname, name, snip):
+	setter = snip.mkline("\tpublic void set" + camel(name) + "(" + classname + " " + name + ")" + getNewLine(snip) + "{") + "" \
+				"\n" + snip.mkline("\t\tthis." + name + " = " + name + ";\n") + snip.mkline("\t}\n")
+	return setter
+
+def createGetter(classname, name, snip):
+	getter = snip.mkline("\tpublic " + classname + " get" + camel(name) + "()" + getNewLine(snip) + "{") + "" \
+				"\n" + snip.mkline("\t\treturn " + name + ";\n") + snip.mkline("\t}\n")
+	return getter
+
 
 endglobal
+
+snippet cd "current dir" !b
+`!p snip += os.path.dirname`
+endsnippet
 
 snippet sleep "try sleep catch" !b
 try`!p nl(snip)`{
@@ -113,15 +164,21 @@ try`!p nl(snip)`{
 }
 endsnippet
 
+snippet im "interface method" !b
+$1`!p snip.rv = completeType(t[1],True,False)` ${2:method}($3`!p
+snip.rv = completeArgs(t[3])`);
+endsnippet
+
 snippet m "method" !b
 $1`!p snip.rv = completeMod(t[1],True,False)
 s = t[1]+completeMod(t[1], True,False)` $2`!p
-snip.rv=completeType(t[2], True,True)` ${3:method}($4`!p
+snip.rv=completeType(t[2], True,False)` ${3:method}($4`!p
 snip.rv = completeArgs(t[4])`)`!p
 if s.find('abstract') > -1:
 	snip.rv = ";"
 else:
-	snip.rv=getNewLine(snip)+"{\n" + snip.mkline("\t\t")`$0`!p
+	snip.rv=getNewLine(snip)+"{"
+	snip += "\t"`$0`!p
 if s.find('abstract') > -1:
 	snip.rv = ""
 else:
@@ -129,23 +186,29 @@ else:
 endsnippet
 
 snippet /o|v/ "new Object or variable" !br
-$1`!p s=t[1]+completeType(t[1])
-snip.rv=completeType(t[1])` ${2:`!p
-if isNative(s): snip.rv = s[0].lower()
-elif len(s) > 0: snip.rv = rCamel(s)
-else: snip.rv = ""`} = `!p
-if isNative(s): snip.rv = "" 
-else: snip.rv = "new " + s + "(" `${3}`!p
+$1`!p s=t[1]+completeType(t[1], True, False)
+snip.rv=completeType(t[1], True, False)` ${2:`!p
+snip.rv=getArgName(s)`} = `!p
+
+if isNative(s):
+	snip.rv = "" 
+elif isValueOfType(s):
+	snip.rv = s+".valueOf("
+else:
+	snip.rv = "new " + s + "(" `${3}`!p
+
 if isNative(s): snip.rv = ""
 else: snip.rv = ")"`;$0
+endsnippet
+
+snippet ty "type" !w
+$1`!p snip.rv = completeType(t[1], True, False)`
 endsnippet
 
 snippet f "field" !b
 $1`!p snip.rv = completeMod(t[1],True)` $2`!p s=t[2]+completeType(t[2], True,False)
 snip.rv=completeType(t[2],True,False)` ${3:`!p
-if isNative(s): snip.rv = s[0].lower()
-elif len(s) > 0: snip.rv = rCamel(s)
-else: snip.rv = ""`}`!p
+snip.rv=getArgName(s)`}`!p
 if t[3].find("=") > -1:
 	snip.rv = complete(t[3],[t[3][t[3].find("="):]+" new "+s+"("])
 else:
@@ -154,6 +217,16 @@ if t[3].find("=") > -1:
 	snip.rv = ");"
 else:
 	snip.rv = ""`
+endsnippet
+
+snippet enu "enum" !b
+$1`!p snip.rv=completeMod(t[1],True)` enum ${2:`!p snip.rv=snip.basename`}`!p nl(snip)`{ 
+		$0
+}
+endsnippet
+
+snippet @ "annotation" !b
+@$1`!p snip.rv = completeAnnotation(t[1])`
 endsnippet
 
 snippet ab "abstract" b
@@ -218,6 +291,7 @@ snip.rv = snip.basename or "untitled"``!p nl(snip)`{
 `!p
 args = getArgs(t[1])
 if len(args) == 0: snip.rv = ""
+# Fields
 for i in args:
 	snip.rv += "\n\tprivate " + i[0] + " " + i[1]+ ";"
 if len(args) > 0:
@@ -225,7 +299,7 @@ if len(args) > 0:
 	public `!p snip.rv = snip.basename or "unknown"`($1)`!p snip.rv = getNewLine(snip)`{ `!p
 args = getArgs(t[1])
 for i in args:
-	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1] + ";"
+	snip.rv += "\n\t\t" + snip.mkline("this." + i[1] + " = " + i[1] + ";")
 if len(args) == 0:
 	snip.rv += "\n"`
 	}$0
@@ -233,11 +307,9 @@ if len(args) == 0:
 args = getArgs(t[1])
 if len(args) == 0: snip.rv = ""
 for i in args:
-	snip.rv += "\n\tpublic void set" + camel(i[1]) + "(" + i[0] + " " + i[1] + ")" + getNewLine(snip) + "{\n" + "\
-	\tthis." + i[1] + " = " + i[1] + ";\n\t}\n"
+	snip.rv += "\n" + createSetter(i[0], i[1], snip)
 
-	snip.rv += "\n\tpublic " + i[0] + " get" + camel(i[1]) + "()" + getNewLine(snip) + "{\
-	\n\t\treturn " + i[1] + ";\n\t}\n"
+	snip.rv += "\n" + createGetter(i[0], i[1], snip)
 `
 }
 endsnippet
@@ -345,12 +417,19 @@ import junit.framework.TestCase;
 $0
 endsnippet
 
-snippet im "import"  b
+snippet "be(gin)?( (\S+))?" "begin{} / end{}" br
+\begin{${1:`!p
+snip.rv = match.group(3) if match.group(2) is not None else "something"`}}
+    ${2:${VISUAL}}
+\end{$1}$0
+endsnippet
+
+snippet imp "import"  b
 import ${1:java}.${2:util}.$0
 endsnippet
 
 snippet in "interface" b
-interface ${1:`!p snip.rv = snip.basename or "untitled"`} ${2:extends ${3:Parent}}`!p nl(snip)`{
+${1:public} interface ${2:`!p snip.rv = snip.basename or "untitled"`} ${3:extends ${4:Parent}}`!p nl(snip)`{
 	$0
 }
 endsnippet
@@ -359,7 +438,7 @@ snippet cc "constuctor call or setter body"
 this.${1:var} = $1;
 endsnippet
 
-snippet list "Collections List" b
+snippet list "Collections List" w
 List<${1:String}> ${2:list} = new ${3:Array}List<$1>();
 endsnippet
 
@@ -391,9 +470,17 @@ if len(args) > 0:
 public `!p snip.rv = snip.basename or "unknown"`($1)`!p nl(snip)`{ `!p
 args = getArgs(t[1])
 for i in args:
-	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1]
+	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1] + ";"
 if len(args) == 0:
 	snip.rv += "\n"`
+}
+endsnippet
+
+snippet try "try/catch" !b
+try`!p nl(snip)`{
+	${VISUAL}$0
+} catch($2`!p snip.rv=completeException(t[2])` ${3:e})`!p nl(snip)`{
+	${4:$3.printStackTrace();}
 }
 endsnippet
 
@@ -420,14 +507,6 @@ endsnippet
 snippet main "main method" b
 public static void main(String[] args)`!p nl(snip)`{
 	$0
-}
-endsnippet
-
-snippet try "try/catch" !b
-try`!p nl(snip)`{
-	$1
-} catch(${2:Exception} ${3:e})`!p nl(snip)`{
-	${4:$3.printStackTrace();}
 }
 endsnippet
 
@@ -507,7 +586,7 @@ snippet re "return" b
 return $1;$0
 endsnippet
 
-snippet "sta?" "static" r
+snippet "sta" "static" w
 static 
 endsnippet
 
