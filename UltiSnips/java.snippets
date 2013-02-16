@@ -12,13 +12,15 @@
 # @Test annotation from the method 
 
 global !p
-import os
-# List of all classes to autocomplete
-classes_file = '.vim/bundle/ultisnips/java/all_classes.lst'
-# List of just throwable/exception classes
-exceptions_file = '.vim/bundle/ultisnips/java/exceptions.lst'
+import vim
 
-# The name you want for you logger field (could move this to g:ultisnips_java_logger_field)
+runtime = [i for i in vim.eval('&runtimepath').split(',') if i.endswith('ultisnips') ][0]
+# List of all classes to autocomplete
+classes_file = runtime + '/java/all_classes.lst'
+# List of just throwable/exception classes
+exceptions_file = runtime + '/java/exceptions.lst'
+
+# The name of the Logger field (could move this to g:ultisnips_java_logger_field)
 logField = 'logger'
 # Log levels you are using
 logLevels = ['trace', 'debug', 'info', 'warn', 'error']
