@@ -180,16 +180,21 @@ if s.find('abstract') > -1:
 	snip.rv = ";"
 else:
 	snip.rv=getNewLine(snip)+"{"
-	snip += "\t"`$0`!p
+	snip += "\t" `$0`!p
 if s.find('abstract') > -1:
 	snip.rv = ""
 else:
 	snip += snip.mkline("}")`
 endsnippet
 
+snippet n "complete new" !w
+new `!p snip.rv=vim.current.line.split(" ")[0].strip()`($1);$0
+endsnippet
+
 snippet /o|v/ "new Object or variable" !br
-$1`!p s=t[1]+completeType(t[1], True, False)
-snip.rv=completeType(t[1], True, False)` ${2:`!p
+$1`!p s=t[1].strip()+completeType(t[1], True, False)
+snip.rv=completeType(t[1], True, False)
+if not t[1].endswith(' '): snip.rv+=' '`${2:`!p
 snip.rv=getArgName(s)`} = `!p
 
 if isNative(s):
@@ -201,6 +206,10 @@ else:
 
 if isNative(s): snip.rv = ""
 else: snip.rv = ")"`;$0
+endsnippet
+
+snippet ex "type" !w
+$1`!p snip.rv = completeException(t[1])`
 endsnippet
 
 snippet ty "type" !w
