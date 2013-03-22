@@ -11,6 +11,8 @@
 # looks, it is defaulted to junit4, setting this option to 3 will remove the
 # @Test annotation from the method 
 
+# Java 7 style types "g:ultisnips_java_7", set to "1" for "<>" diamond syntax
+
 global !p
 import vim
 
@@ -42,6 +44,9 @@ def junit(snip):
         snip += ""
     else:
         snip.rv += '@Test\n\t'
+
+def java7(snip):
+    return snip.opt('g:ultisnips_java_7', '') == '1'
 
 def nl(snip):
     if snip.opt('g:ultisnips_java_brace_style', '') == 'nl':
@@ -428,13 +433,6 @@ import junit.framework.TestCase;
 $0
 endsnippet
 
-snippet "be(gin)?( (\S+))?" "begin{} / end{}" br
-\begin{${1:`!p
-snip.rv = match.group(3) if match.group(2) is not None else "something"`}}
-    ${2:${VISUAL}}
-\end{$1}$0
-endsnippet
-
 snippet imp "import"  b
 import ${1:java}.${2:util}.$0
 endsnippet
@@ -448,17 +446,23 @@ endsnippet
 snippet cc "constuctor call or setter body" 
 this.${1:var} = $1;
 endsnippet
-
+#
+#$1`!p snip.rv = completeMod(t[1],True,False)
+#s = t[1]+completeMod(t[1], True,False)` $2`!p
 snippet list "Collections List" w
-List<${1:String}> ${2:list} = new ${3:Array}List<$1>();
+List<$1`!p r1 = completeType(t[1], True)
+snip.rv = r1`> ${2:list} = new ${3:Array}List<`!p if not java7(snip): snip.rv=t[1]+r1`>();
 endsnippet
 
-snippet map "Collections Map" b
-Map<${1:String}, ${2:String}> ${3:map} = new ${4:Hash}Map<$1, $2>();
+snippet map "Collections Map" w
+Map<$1`!p r1 = completeType(t[1], True)
+snip.rv = r1`,$2`!p r2 = completeType(t[2], True)
+snip.rv = r2`> ${3:map} = new ${4:Hash}Map<`!p if not java7(snip): snip.rv=t[1]+r1+", "+t[2]+r2`>();
 endsnippet
 
-snippet set "Collections Set" !b
-Set<${1:String}> ${2:set} = new ${3:Hash}Set<$1>();
+snippet set "Collections Set" !w
+Set<$1`!p r1 = completeType(t[1], True)
+snip.rv = r1`> ${2:set} = new ${3:Hash}Set<`!p if not java7(snip): snip.rv=t[1]+r1`>();
 endsnippet
 
 snippet /Str?|str/ "String" !br
@@ -485,6 +489,32 @@ for i in args:
 if len(args) == 0:
 	snip.rv += "\n"`
 }
+endsnippet
+
+snippet cn "constructor, \w fields + assigments + setters and getters" b
+`!p
+args = getArgs(t[1])
+for i in args:
+	snip.rv += "\n\tprivate " + i[0] + " " + i[1]+ ";"
+if len(args) > 0:
+	snip.rv += "\n"`
+public `!p snip.rv = snip.basename or "unknown"`($1)`!p nl(snip)`{ `!p
+args = getArgs(t[1])
+for i in args:
+	snip.rv += "\n\t\tthis." + i[1] + " = " + i[1] + ";"
+if len(args) == 0:
+	snip.rv += "\n"`
+}
+`!p
+args = getArgs(t[1])
+if len(args) == 0: snip.rv = ""
+for i in args:
+	snip.rv += "\n\tpublic void set" + camel(i[1]) + "(" + i[0] + " " + i[1] + ")" + getNewLine(snip) + "{" + "" \
+				"\n" + "\t\tthis." + i[1] + " = " + i[1] + ";\n" + "\t}\n"
+	
+	snip.rv += "\n\tpublic " + i[0] + " get" + camel(i[1]) + "()" + getNewLine(snip) + "{" + "" \
+				"\n" + "\t\treturn " + i[1] + ";\n" + "\t}\n"
+`
 endsnippet
 
 snippet try "try/catch" !b
