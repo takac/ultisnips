@@ -70,17 +70,32 @@ def getArgs(group):
 def log():
 	return logField
 
+# Make camel case uppercase start
 def camel(word):
 	if len(word) > 0:
 		return word[0].upper() + word[1:]
 	else:
 		return ''
 
+# Make camelCase with lowercase first letter
 def rCamel(word):
 	if len(word) > 0:
 		return word[0].lower() + word[1:]
 	return ''
-def complete(word, opts, complete_empty=False, show=True):
+
+# Core method for completing phrases
+#
+# word = "In" 
+# opts = ["Integer", "String", "Double"] 
+# returns --> "teger"
+#
+# Word = starting phrase to complete - eg S or String or Str
+# Opts = list of words could complete phrase - eg [ "String", "Integer"...]
+# Complete_empty when true will complete an empty string with the first option in opts
+# ie "" returns opts[0]
+# Show, when true creates a list of options and return them for ambiguous phrases.
+# ie "St" returns "{ring|rip|rike}"
+def complete(word, opts, complete_empty=False, show=False):
 	if len(word) == 0:
 		if complete_empty: return opts[0] 
 		else: return ''
@@ -94,6 +109,7 @@ def complete(word, opts, complete_empty=False, show=True):
 		return '{' + '|'.join(opts) + '}'
 	else: return opts[0]
 
+# Complete first word of phrase
 def completeFirst(word, opts, complete_empty=False, show=True):
 	return complete(word.split(' ')[-1], opts,complete_empty, show)
 
@@ -101,7 +117,7 @@ def completeFirst(word, opts, complete_empty=False, show=True):
 def completeType(word, complete_empty=False, show=False):
 	return complete(word, types,complete_empty,show)
 
-def completeMod(word, complete_empty=False, show=False):
+def completeModifier(word, complete_empty=False, show=False):
 	return completeFirst(word, modifiers, complete_empty, show)
 
 def completeLogLevel(word):
@@ -120,7 +136,7 @@ def getArgName(typename):
 		return typename[0].lower()
 	return rCamel(typename)
 
-# Completer for argument pairs
+# Completer for argument pairs- (Type x, Type y)
 def completeArgs(word):
 	# Get last pair
 	word = word.split(',')[-1]
@@ -146,17 +162,17 @@ def isNative(word):
 def isValueOfType(word):
 	return word in valueOfTypes
 
+# Still having issues with mkline for correct indentation
 def createSetter(classname, name, snip):
 	setter = snip.mkline("\tpublic void set" + camel(name) + "(" + classname + " " + name + ")" + getNewLine(snip) + "{") + "" \
 				"\n" + snip.mkline("\t\tthis." + name + " = " + name + ";\n") + snip.mkline("\t}\n")
 	return setter
 
+# Still having issues with mkline for correct indentation
 def createGetter(classname, name, snip):
 	getter = snip.mkline("\tpublic " + classname + " get" + camel(name) + "()" + getNewLine(snip) + "{") + "" \
 				"\n" + snip.mkline("\t\treturn " + name + ";\n") + snip.mkline("\t}\n")
 	return getter
-
-
 endglobal
 
 snippet cd "current dir" !b
@@ -177,8 +193,8 @@ snip.rv = completeArgs(t[3])`);
 endsnippet
 
 snippet m "method" !b
-$1`!p snip.rv = completeMod(t[1],True,False)
-s = t[1]+completeMod(t[1], True,False)` $2`!p
+$1`!p snip.rv = completeModifier(t[1],True)
+s = t[1]+completeModifier(t[1], True,False)` $2`!p
 snip.rv=completeType(t[2], True,False)` ${3:method}($4`!p
 snip.rv = completeArgs(t[4])`)`!p
 if s.find('abstract') > -1:
@@ -222,7 +238,7 @@ $1`!p snip.rv = completeType(t[1], True, False)`
 endsnippet
 
 snippet f "field" !b
-$1`!p snip.rv = completeMod(t[1],True)` $2`!p s=t[2]+completeType(t[2], True,False)
+$1`!p snip.rv = completeModifier(t[1],True)` $2`!p s=t[2]+completeType(t[2], True,False)
 snip.rv=completeType(t[2],True,False)` ${3:`!p
 snip.rv=getArgName(s)`}`!p
 if t[3].find("=") > -1:
@@ -236,7 +252,7 @@ else:
 endsnippet
 
 snippet enu "enum" !b
-$1`!p snip.rv=completeMod(t[1],True)` enum ${2:`!p snip.rv=snip.basename`}`!p nl(snip)`{ 
+$1`!p snip.rv=completeModifier(t[1],True)` enum ${2:`!p snip.rv=snip.basename`}`!p nl(snip)`{ 
 		$0
 }
 endsnippet
@@ -392,6 +408,7 @@ for (Entry<${1:String}, ${2:String}> ${3:e} : ${4:map}.entrySet()) {
 
 }
 endsnippet
+
 snippet fore "for (each)" b
 for (${1:String} ${2:`!p if len(t[1]) > 0: snip.rv= t[1][0].lower()`} : ${3:`!p snip.rv = rCamel(t[1]) + "s"`})`!p nl(snip)`{
 	$0
@@ -446,9 +463,7 @@ endsnippet
 snippet cc "constuctor call or setter body" 
 this.${1:var} = $1;
 endsnippet
-#
-#$1`!p snip.rv = completeMod(t[1],True,False)
-#s = t[1]+completeMod(t[1], True,False)` $2`!p
+
 snippet list "Collections List" w
 List<$1`!p r1 = completeType(t[1], True)
 snip.rv = r1`> ${2:list} = new ${3:Array}List<`!p if not java7(snip): snip.rv=t[1]+r1`>();
@@ -456,7 +471,7 @@ endsnippet
 
 snippet map "Collections Map" w
 Map<$1`!p r1 = completeType(t[1], True)
-snip.rv = r1`,$2`!p r2 = completeType(t[2], True)
+snip.rv = r1`, $2`!p r2 = completeType(t[2], True)
 snip.rv = r2`> ${3:map} = new ${4:Hash}Map<`!p if not java7(snip): snip.rv=t[1]+r1+", "+t[2]+r2`>();
 endsnippet
 
