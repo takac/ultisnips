@@ -4,7 +4,7 @@ extends texmath
 #                             LATEX SNIPPETS                              #
 ###########################################################################
 
-snippet r "\ref{}" w
+snippet r "\\ref{}" w
 \ref{$1}
 endsnippet
 
@@ -53,7 +53,7 @@ snippet desc "Description" b
 endsnippet
 
 #####################################
-# SECTIONS, CHAPTERS AND THERE LIKE #
+# SECTIONS, CHAPTERS AND THEIR LIKE #
 #####################################
 
 snippet part "Part" b
@@ -122,4 +122,16 @@ ${0}
 % subparagraph $2 (end)
 endsnippet
 
+###############
+#  Utilities  #
+###############
+
+snippet pac "Package" b
+\usepackage[${1:options}]{${2:package}}$0
+endsnippet
+
+
+snippet lp "Long parenthesis" 
+\left(${1:${VISUAL:contents}}\right)$0
+endsnippet
 # vim:ft=snippets:
